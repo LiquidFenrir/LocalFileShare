@@ -234,7 +234,10 @@ void startClient(void)
 	else
 	{
 		const char * refreshStr[] = {"No networks found."};
+		consoleSelect(&uiConsole);
 		int selected = display_menu(refreshStr, 1, "Select a network to connect to or press Y to refresh:");
+		consoleClear();
+		consoleSelect(&debugConsole);
 		if (selected != -1) goto scan;
 		goto quit;
 	}
@@ -309,16 +312,17 @@ void sendFile(void)
 	{
 		printf("Sending block %u of %u\n", i+1, blocksamount);
 		fread(tempbuf, 1, BLOCKSIZE, fh);
+		// svcSleepThread(5e7); //to help with sync - receiver will wait for the data
 		sendData(tempbuf, BLOCKSIZE);
-		puts("Waiting for sync.\n");
+		// puts("Waiting for sync...");
 		if (wait()) goto quit;
-		puts("Received\n");
+		// puts("Received");
 	}
 	free(tempbuf);
 	
-	puts("Waiting for sync.\n");
+	// puts("Waiting for sync...");
 	if (wait()) goto quit;
-	puts("Received\n");
+	// puts("Received");
 	
 	if (lastblock)
 	{
@@ -379,16 +383,17 @@ void receiveFile(void)
 	for (u16 i = 0; i < blocksamount; i++)
 	{
 		printf("Receiving block %u of %u\n", i+1, blocksamount);
-		if (wait()) goto quit; 
+		if (wait()) goto quit;
 		fwrite(tmpbuf, 1, BLOCKSIZE, fh);
-		puts("Sending sync.\n");
+		// svcSleepThread(5e7); //sleep for 0.05 sec to help for sync - sender will wait for the message
+		// puts("Sending sync...");
 		sendData(&val, 4);
-		puts("Sent\n");
+		// puts("Sent");
 	}
 	
-	puts("Sending sync.\n");
+	// puts("Sending sync...");
 	sendData(&val, 4);
-	puts("Sent\n");
+	// puts("Sent");
 	
 	if (lastblock)
 	{
