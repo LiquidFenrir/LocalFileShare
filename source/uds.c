@@ -247,14 +247,22 @@ void startClient(void)
 	return;
 }
 
-Result wait(void)
+Result wait(bool udswait)
 {
-	udsWaitDataAvailable(&bindctx, false, true); //Check whether data is available via udsPullPacket().
-	memset(tmpbuf, 0, tmpbuf_size);
-	actual_size = 0;
-	src_NetworkNodeID = 0;
-	ret = udsPullPacket(&bindctx, tmpbuf, tmpbuf_size, &actual_size, &src_NetworkNodeID);
-	if(R_FAILED(ret)) printf("udsPullPacket() returned 0x%08x.\n", (unsigned int)ret);
+	if (udswait) udsWaitDataAvailable(&bindctx, false, true); //Check whether data is available via udsPullPacket().
+	for (int i = 0; i < 10; i++)
+	{
+		memset(tmpbuf, 0, tmpbuf_size);
+		actual_size = 0;
+		src_NetworkNodeID = 0;
+		ret = udsPullPacket(&bindctx, tmpbuf, tmpbuf_size, &actual_size, &src_NetworkNodeID);
+		if(R_FAILED(ret))
+		{
+			printf("udsPullPacket() returned 0x%08x.\n", (unsigned int)ret);
+			break;
+		}
+		if (actual_size != 0) break;
+	}
 	return ret;
 }
 
@@ -295,7 +303,7 @@ void sendFile(void)
 	free(name);
 	sendData(&size, 4);
 	//wait for the receiver to have selected where he wants to save the file
-	if (wait()) goto quit;
+	if (wait(true)) goto quit;
 	if (tmpbuf[0] != 0) goto quit;
 	
 	puts("Sending file\n");
@@ -306,32 +314,28 @@ void sendFile(void)
 	sendData(&lastblock, 2);
 	printf("Sending %u blocks, lastblock size %u\n", blocksamount, lastblock);
 	
-	if (wait()) goto quit; //waiting for the OK
 	tempbuf = malloc(BLOCKSIZE);
-	for (u16 i = 0; i < blocksamount; i++)
+	u16 oldblock = 0;
+	u16 block = 0;
+	u16 used_size = BLOCKSIZE;
+	
+	if (wait(true)) goto quit; //waiting for the OK
+	
+	while (block != blocksamount)
 	{
-		printf("Sending block %u of %u\n", i+1, blocksamount);
-		fread(tempbuf, 1, BLOCKSIZE, fh);
-		// svcSleepThread(5e7); //to help with sync - receiver will wait for the data
-		sendData(tempbuf, BLOCKSIZE);
-		// puts("Waiting for sync...");
-		if (wait()) goto quit;
-		// puts("Received");
+		puts("Waiting for block request");
+		if (wait(false)) goto quit;
+		if (actual_size == 0) continue;
+		block = tmpbuf[0];
+		printf("block requested: %u of %u\n", block, blocksamount);
+		if (block != (oldblock+1)) fseek(fh, BLOCKSIZE*block, SEEK_SET);
+		if (block == blocksamount) used_size = lastblock;
+		
+		puts("Sending block.");
+		fread(tempbuf, 1, used_size, fh);
+		sendData(tempbuf, used_size);
 	}
 	free(tempbuf);
-	
-	// puts("Waiting for sync...");
-	if (wait()) goto quit;
-	// puts("Received");
-	
-	if (lastblock)
-	{
-		puts("Sending last block\n");
-		tempbuf = malloc(lastblock);
-		fread(tempbuf, 1, lastblock, fh);
-		sendData(tempbuf, lastblock);
-		free(tempbuf);
-	}
 	
 	puts("Done sending file.\n");
 	
@@ -342,12 +346,12 @@ void sendFile(void)
 void receiveFile(void)
 {
 	puts("Waiting for a file to receive...\n");
-	if (wait()) return;
+	if (wait(true)) return;
 	
 	if (strcmp((char *)tmpbuf, "SENDING FILE") != 0) return;
-	if (wait()) return;
+	if (wait(true)) return;
 	char * name = strdup((char *)tmpbuf);
-	if (wait()) return;
+	if (wait(true)) return;
 	u32 size = tmpbuf[0];
 	
 	printf("Where do you want to save file %s ?\nFile size: %lu\n", name, size);
@@ -373,33 +377,26 @@ void receiveFile(void)
 	
 	puts("Receiving file.\n");
 	
-	if (wait()) goto quit;
+	if (wait(true)) goto quit;
 	u16 blocksamount = (u16 )tmpbuf[0];
-	if (wait()) goto quit;
+	if (wait(true)) goto quit;
 	u16 lastblock = (u16 )tmpbuf[0];
 	printf("Receiving %u blocks, lastblock size %u\n", blocksamount, lastblock);
 	
 	sendData(&val, 4); //sending the OK
-	for (u16 i = 0; i < blocksamount; i++)
-	{
-		printf("Receiving block %u of %u\n", i+1, blocksamount);
-		if (wait()) goto quit;
-		fwrite(tmpbuf, 1, BLOCKSIZE, fh);
-		// svcSleepThread(5e7); //sleep for 0.05 sec to help for sync - sender will wait for the message
-		// puts("Sending sync...");
-		sendData(&val, 4);
-		// puts("Sent");
-	}
 	
-	// puts("Sending sync...");
-	sendData(&val, 4);
-	// puts("Sent");
-	
-	if (lastblock)
+	for (u16 i = 0; i <= blocksamount; i++)
 	{
-		puts("Receiving last block\n");
-		if (wait()) goto quit; 
-		fwrite(tmpbuf, 1, lastblock, fh);
+		printf("Requesting block %u of %u\n", i, blocksamount);
+		sendData(&i, 2); 
+		// puts("Receiving block");
+		if (wait(false)) goto quit;
+		if (actual_size == 0)
+		{
+			i--;
+			continue;
+		}
+		fwrite(tmpbuf, 1, actual_size, fh);
 	}
 	
 	puts("Done receiving file.\n");
