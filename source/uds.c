@@ -310,15 +310,15 @@ void sendFile(void)
 		printf("Sending block %u of %u\n", i+1, blocksamount);
 		fread(tempbuf, 1, BLOCKSIZE, fh);
 		sendData(tempbuf, BLOCKSIZE);
-		puts("Waiting for sync...");
+		puts("Waiting for sync.\n");
 		if (wait()) goto quit;
-		puts("Received!");
+		puts("Received\n");
 	}
 	free(tempbuf);
 	
-	puts("Waiting for sync...");
+	puts("Waiting for sync.\n");
 	if (wait()) goto quit;
-	puts("Received!");
+	puts("Received\n");
 	
 	if (lastblock)
 	{
@@ -381,14 +381,14 @@ void receiveFile(void)
 		printf("Receiving block %u of %u\n", i+1, blocksamount);
 		if (wait()) goto quit; 
 		fwrite(tmpbuf, 1, BLOCKSIZE, fh);
-		puts("Sending sync...");
+		puts("Sending sync.\n");
 		sendData(&val, 4);
-		puts("Sent!");
+		puts("Sent\n");
 	}
 	
-	puts("Sending sync...");
+	puts("Sending sync.\n");
 	sendData(&val, 4);
-	puts("Sent!");
+	puts("Sent\n");
 	
 	if (lastblock)
 	{
