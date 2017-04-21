@@ -16,9 +16,10 @@ int main()
 	consoleClear();
 	consoleSelect(&debugConsole);
 	
-	if (selected == -1) return 0;
+	if (selected == -1) goto exit;
 	startComm(selected);
 	
+	exit:
 	udsExit();
 	gfxExit();
 	return 0;
