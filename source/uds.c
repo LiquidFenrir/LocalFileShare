@@ -302,38 +302,40 @@ void sendFile(void)
 	sendStr(name);
 	free(name);
 	sendData(&size, 4);
+	
 	//wait for the receiver to have selected where he wants to save the file
 	if (wait(true)) goto quit;
 	if (tmpbuf[0] != 0) goto quit;
 	
 	puts("Sending file\n");
 	
-	u16 lastblock = size%BLOCKSIZE;
-	u16 blocksamount = (size - lastblock)/BLOCKSIZE;
-	sendData(&blocksamount, 2);
-	sendData(&lastblock, 2);
-	printf("Sending %u blocks, lastblock size %u\n", blocksamount, lastblock);
+	u32 lastblock = size%BLOCKSIZE;
+	u32 blocksamount = (size - lastblock)/BLOCKSIZE;
+	sendData(&blocksamount, 4);
+	sendData(&lastblock, 4);
+	printf("Sending %lu blocks, lastblock size %lu\n", blocksamount, lastblock);
 	
 	tempbuf = malloc(BLOCKSIZE);
-	u16 oldblock = 0;
-	u16 block = 0;
-	u16 used_size = BLOCKSIZE;
+	u32 oldblock = 0;
+	u32 block = 0;
+	u32 used_size = BLOCKSIZE;
 	
-	if (wait(true)) goto quit; //waiting for the OK
-	
+	puts("Waiting for block request");
 	while (block != blocksamount)
 	{
-		puts("Waiting for block request");
 		if (wait(false)) goto quit;
 		if (actual_size == 0) continue;
-		block = tmpbuf[0];
-		printf("block requested: %u of %u\n", block, blocksamount);
+		
+		block = (u32 )tmpbuf[0];
+		printf("block requested: %lu of %lu\n", block, blocksamount);
+		
 		if (block != (oldblock+1)) fseek(fh, BLOCKSIZE*block, SEEK_SET);
 		if (block == blocksamount) used_size = lastblock;
 		
 		puts("Sending block.");
 		fread(tempbuf, 1, used_size, fh);
 		sendData(tempbuf, used_size);
+		puts("Waiting for block request");
 	}
 	free(tempbuf);
 	
@@ -378,24 +380,21 @@ void receiveFile(void)
 	puts("Receiving file.\n");
 	
 	if (wait(true)) goto quit;
-	u16 blocksamount = (u16 )tmpbuf[0];
+	u32 blocksamount = (u32 )tmpbuf[0];
 	if (wait(true)) goto quit;
-	u16 lastblock = (u16 )tmpbuf[0];
-	printf("Receiving %u blocks, lastblock size %u\n", blocksamount, lastblock);
-	
-	sendData(&val, 4); //sending the OK
-	
-	for (u16 i = 0; i <= blocksamount; i++)
+	u32 lastblock = (u32 )tmpbuf[0];
+	printf("Receiving %lu blocks, lastblock size %lu\n", blocksamount, lastblock);
+		
+	for (u32 i = 0; i <= blocksamount; i++)
 	{
-		printf("Requesting block %u of %u\n", i, blocksamount);
-		sendData(&i, 2); 
-		// puts("Receiving block");
+		printf("Requesting block %lu of %lu\n", i, blocksamount);
+		
+		request:
+		sendData(&i, 4); 
+
 		if (wait(false)) goto quit;
-		if (actual_size == 0)
-		{
-			i--;
-			continue;
-		}
+		if (actual_size == 0) goto request;
+		
 		fwrite(tmpbuf, 1, actual_size, fh);
 	}
 	
