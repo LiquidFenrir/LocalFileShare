@@ -2,10 +2,11 @@
 
 //width in characters of the screen you're drawing on. 50 for the top screen, 40 for bottom
 #define SCREEN_WIDTH 50
+#define SCREEN_HEIGHT 30
 
 #define OFFSET 1 //offset in characters of the file list from the location bar
 
-#define MAX_ENTRIES_PER_SCREEN (SCREEN_WIDTH-1-OFFSET*2)
+#define MAX_ENTRIES_PER_SCREEN (SCREEN_HEIGHT-1-OFFSET*2)
 
 static int scroll = 0;
 
