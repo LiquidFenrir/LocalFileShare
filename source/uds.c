@@ -225,7 +225,7 @@ void startClient(void)
 		}
 		
 		if (selected == -1) goto quit;
-		if (selected == -2 || selected == -3) goto scan;
+		if (selected == -2) goto scan;
 		
 		printf("Connecting to network #%u\n", selected);
 		connectToNetwork(&networks[selected]);

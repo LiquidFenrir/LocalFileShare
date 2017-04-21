@@ -30,7 +30,7 @@ int display_menu(const char *menu_entries[], const int entries_amount, const cha
 		if (kDown & KEY_A) return ctr;
 		else if (kDown & (KEY_B | KEY_START)) break; // Exit
 		else if (kDown & KEY_Y) return -2;
-		else if (kDown & KEY_X) return -3;
+		// else if (kDown & KEY_X) return -3;
 		
 		else if (kDown & KEY_LEFT) ctr = 0;
 		else if (kDown & KEY_RIGHT) ctr = entries_amount-1;
