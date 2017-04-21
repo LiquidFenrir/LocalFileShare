@@ -343,6 +343,7 @@ void sendFile(void)
 	
 	quit:
 	fclose(fh);
+	instructions();
 }
 
 void receiveFile(void)
@@ -401,7 +402,8 @@ void receiveFile(void)
 	puts("Done receiving file.\n");
 	
 	quit:
-	fclose(fh);	
+	fclose(fh);
+	instructions();
 }
 
 void quitNetwork(void)
@@ -426,7 +428,7 @@ void startComm(bool server)
 	tmpbuf_size = UDS_DATAFRAME_MAXSIZE; // 0x5C6 bytes
 	tmpbuf = malloc(tmpbuf_size);
 	
-	puts("Press START to quit.\nPress Y to send a file.\nPress X to receive a file.\n");
+	instructions();
 	
 	while (true)
 	{
