@@ -1,5 +1,8 @@
 #include "ui.h"
 
+#define PERCENTAGE_PER_CHAR 5
+#define PERCENT_CHAR "#"
+
 int display_menu(const char *menu_entries[], const int entries_amount, const char *headerstr)
 {
 	bool redraw = true;
@@ -44,4 +47,26 @@ int display_menu(const char *menu_entries[], const int entries_amount, const cha
 	}
 
 	return -1;
+}
+
+void progressBar(u32 max, u32 current)
+{
+	printf("\x1b[s");
+	
+	int i;
+	char * blockStr = NULL;
+	asprintf(&blockStr, "Block %lu of %lu", current, max);
+	//erase the previous block count, to avoid having to clear the console (would cause blinking of the screen)
+	for (i = 0; i <= (int)strlen(blockStr); i++) printf(" ");
+	
+	//start printing the actual info
+	printf("\x1b[u");
+	puts(blockStr);
+	
+	printf("[");
+	for (i = 0; i < (int)(current*100/max); i += PERCENTAGE_PER_CHAR) printf(PERCENT_CHAR);
+	for (; i < 100; i += PERCENTAGE_PER_CHAR) printf(" ");
+	printf("]");
+	
+	printf("\x1b[u");
 }

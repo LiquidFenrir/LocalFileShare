@@ -307,6 +307,7 @@ void sendFile(void)
 	if (wait(true)) goto quit;
 	if (tmpbuf[0] != 0) goto quit;
 	
+	consoleClear();
 	puts("Sending file\n");
 	
 	u32 lastblock = size%BLOCKSIZE;
@@ -320,26 +321,22 @@ void sendFile(void)
 	u32 block = 0;
 	u32 used_size = BLOCKSIZE;
 	
-	puts("Waiting for block request");
 	while (block != blocksamount)
 	{
+		progressBar(blocksamount, block);
+		
 		if (wait(false)) goto quit;
 		if (actual_size == 0) continue;
 		
 		block = (u32 )tmpbuf[0];
-		printf("block requested: %lu of %lu\n", block, blocksamount);
 		
 		if (block != (oldblock+1)) fseek(fh, BLOCKSIZE*block, SEEK_SET);
 		if (block == blocksamount) used_size = lastblock;
 		
-		puts("Sending block.");
 		fread(tempbuf, 1, used_size, fh);
 		sendData(tempbuf, used_size);
-		puts("Waiting for block request");
 	}
 	free(tempbuf);
-	
-	puts("Done sending file.\n");
 	
 	quit:
 	fclose(fh);
@@ -378,6 +375,7 @@ void receiveFile(void)
 	
 	sendData(&val, 4);
 	
+	consoleClear();
 	puts("Receiving file.\n");
 	
 	if (wait(true)) goto quit;
@@ -388,18 +386,16 @@ void receiveFile(void)
 		
 	for (u32 i = 0; i <= blocksamount; i++)
 	{
-		printf("Requesting block %lu of %lu\n", i, blocksamount);
+		progressBar(blocksamount, i);
 		
 		request:
 		sendData(&i, 4); 
-
+		
 		if (wait(false)) goto quit;
 		if (actual_size == 0) goto request;
 		
 		fwrite(tmpbuf, 1, actual_size, fh);
 	}
-	
-	puts("Done receiving file.\n");
 	
 	quit:
 	fclose(fh);
@@ -424,7 +420,7 @@ void startComm(bool server)
 	else startClient();
 	
 	waitForConnection();
-
+	
 	tmpbuf_size = UDS_DATAFRAME_MAXSIZE; // 0x5C6 bytes
 	tmpbuf = malloc(tmpbuf_size);
 	
