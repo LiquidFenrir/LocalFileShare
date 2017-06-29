@@ -27,7 +27,7 @@ char * filebrowser(void) {
 				dirInfoArray[i].name[0] = 0;
 				dirInfoArray[i].isFile = false;
 			}
-			sortDirList(dirInfoArray, dirCount);
+			sortDirList(&dirInfoArray[2], dirCount-2);
 			
 			draw:
 			if (currentDir > dirCount-1) currentDir = dirCount-1;
@@ -47,16 +47,16 @@ char * filebrowser(void) {
 			if (dirCount != 0) {
 				if (dirInfoArray[currentDir].isFile) {
 					//return the path to the file
-					return strcat(currentPath, dirInfoArray[currentDir].name);
+					char * retpath = malloc(strlen(currentPath)+strlen(dirInfoArray[currentDir].name)+1);
+					strcat(retpath, currentPath);
+					strcat(retpath, dirInfoArray[currentDir].name);
+					return retpath;
 				}
 				else {
 					chdir(dirInfoArray[currentDir].name);
 					goto change;
 				}
 			}
-		}
-		else if (hidKeysDown() & KEY_X) {
-			return currentPath;
 		}
 		else if (hidKeysDown() & KEY_B) {
 			chdir("..");
@@ -84,5 +84,5 @@ char * filebrowser(void) {
 		gspWaitForVBlank();
 	}
 	
-	return "";
+	return NULL;
 }
