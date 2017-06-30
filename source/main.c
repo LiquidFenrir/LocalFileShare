@@ -49,7 +49,7 @@ int main()
 			Handle filehandle;
 			ret = openFile(filepath, &filehandle, false);
 			if (R_FAILED(ret)) printf("openFile() returned 0x%08x.\n", (unsigned int)ret);
-			free(filepath);
+			free(filepath-3);
 			
 			u64 fileSize = 0;
 			ret = FSFILE_GetSize(filehandle, &fileSize);
@@ -128,7 +128,7 @@ int main()
 			Handle filehandle;
 			ret = openFile(filepath, &filehandle, true);
 			if (R_FAILED(ret)) printf("openFile() returned 0x%08x.\n", (unsigned int)ret);
-			free(filepath);
+			free(filepath-3);
 			
 			u32 blockCount = 0;
 			do {

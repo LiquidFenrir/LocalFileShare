@@ -48,9 +48,9 @@ char * filebrowser(void) {
 				if (dirInfoArray[currentDir].isFile) {
 					//return the path to the file
 					char * retpath = malloc(strlen(currentPath)+strlen(dirInfoArray[currentDir].name)+1);
-					strcat(retpath, currentPath);
+					strcat(retpath, currentPath+strlen("smdc:"));
 					strcat(retpath, dirInfoArray[currentDir].name);
-					return retpath;
+					return retpath+3;
 				}
 				else {
 					chdir(dirInfoArray[currentDir].name);
