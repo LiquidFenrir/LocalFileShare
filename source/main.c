@@ -72,6 +72,9 @@ int main()
 			u32 previousBlock = 0;
 			u64 offset = 0;
 			
+			closeFile(filehandle);
+			continue;
+			
 			printf("Starting sending, press B to abort...\n");
 			while (true) {
 				//receive the id of the block to send
@@ -139,6 +142,9 @@ int main()
 			u32 bytesWritten = 0;
 			u64 offset = 0;
 			u32 i = 0;
+			
+			closeFile(filehandle);
+			continue;
 			
 			printf("Starting requests, press B to abort...\n");
 			for (i = 0; i < blockCount; i++) {
