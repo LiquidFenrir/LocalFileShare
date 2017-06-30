@@ -64,8 +64,9 @@ static Result startServer(void)
 	
 	udsGenerateDefaultNetworkStruct(&networkstruct, wlancommID, 0, UDS_MAXNODES);
 	
-	printf("Type in the password for the server.\n");
-	char * passphrase = getStr(64);
+	// printf("Type in the password for the server.\n");
+	// char * passphrase = getStr(64);
+	char * passphrase = "aloha";
 	printf("Password chosen:\n'%s'\n", passphrase);
 	
 	ret = udsCreateNetwork(&networkstruct, passphrase, strlen(passphrase)+1, &bindctx, data_channel, recv_buffer_size);
@@ -73,7 +74,7 @@ static Result startServer(void)
 		printf("udsCreateNetwork() returned 0x%08x.\n", (unsigned int)ret);
 		return ret;
 	}
-	free(passphrase);
+	// free(passphrase);
 	
 	printf("Type in the name for the server.\n");
 	char * name = getStr(10);
@@ -96,7 +97,7 @@ static Result startServer(void)
 static Result connectToServer(udsNetworkScanInfo * network)
 {
 	Result ret = 0;
-	int pos;
+	// int pos;
 	
 	// printf("network: total nodes = %u.\n", (unsigned int)network->network.total_nodes);
 	
@@ -118,18 +119,20 @@ static Result connectToServer(udsNetworkScanInfo * network)
 	
 	printf("Connecting to the server as a client...\n");
 	
-	printf("Type in the password of the server.\n");
-	char * passphrase = getStr(64);
+	// printf("Type in the password of the server.\n");
+	// char * passphrase = getStr(64);
+	char * passphrase = "aloha";
 	printf("Password used:\n'%s'\n", passphrase);
 	
-	for (pos = 0; pos < 10; pos++) { // 10 tries
+	// for (pos = 0; pos < 10; pos++) { // 10 tries
 		ret = udsConnectNetwork(&network->network, passphrase, strlen(passphrase)+1, &bindctx, UDS_BROADCAST_NETWORKNODEID, UDSCONTYPE_Client, data_channel, recv_buffer_size);
 		if (R_FAILED(ret)) printf("udsConnectNetwork() returned 0x%08x.\n", (unsigned int)ret);
 		else {
 			printf("Succesfully connected to the server!\n");
+			// break;
 		}
-	}
-	free(passphrase);
+	// }
+	// free(passphrase);
 	
 	return ret;
 }
@@ -155,7 +158,7 @@ static Result startClient(void)
 	if (R_FAILED(ret)) printf("udsScanBeacons() returned 0x%08x.\n", (unsigned int)ret);
 	
 	if (total_networks) {
-		printf("%u server found\n", total_networks);
+		printf("%u servers found\n", total_networks);
 		
 		char ** names = malloc(total_networks*sizeof(char*));
 		for (i = 0; i < total_networks; i++) {
@@ -171,6 +174,10 @@ static Result startClient(void)
 		if (selected_network >= 0) {
 			printf("Connecting to server %u, named\n%s\n", selected_network, names[i]);
 			ret = connectToServer(&networks[selected_network]);
+			if (R_FAILED(ret)) {
+				printf("Couldn't connect to the server, scanning again.\n");
+				selected_network = -2;
+			}
 		}
 		
 		for (i = 0; i < total_networks; i++) {
