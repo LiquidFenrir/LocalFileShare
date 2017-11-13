@@ -9,8 +9,8 @@ static dirInfo dirInfoArray[256];
 static int dirCount = 0;
 static int currentDir = 0;
 
-char * filebrowser(void) {
-	chdir("/");
+char * filebrowser(char * startDir) {
+	chdir(startDir);
 	
 	goto change;
 	
@@ -44,18 +44,15 @@ char * filebrowser(void) {
 			break;
 		}
 		else if (hidKeysDown() & KEY_A) {
-			if (dirCount != 0) {
-				if (dirInfoArray[currentDir].isFile) {
-					//return the path to the file
-					char * retpath = malloc(strlen(currentPath)+strlen(dirInfoArray[currentDir].name)+1);
-					strcat(retpath, currentPath+strlen("smdc:"));
-					strcat(retpath, dirInfoArray[currentDir].name);
-					return retpath+3;
-				}
-				else {
-					chdir(dirInfoArray[currentDir].name);
-					goto change;
-				}
+			if (dirInfoArray[currentDir].isFile) {
+				//return the path to the file
+				char * fullPath = NULL;
+				asprintf(&fullPath, "%s%s", (strncmp(currentPath, "sdmc:", 5) == 0 ? currentPath+5 : currentPath), dirInfoArray[currentDir].name);
+				return fullPath;
+			}
+			else {
+				chdir(dirInfoArray[currentDir].name);
+				goto change;
 			}
 		}
 		else if (hidKeysDown() & KEY_B) {

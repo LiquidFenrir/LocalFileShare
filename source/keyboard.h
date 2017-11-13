@@ -2,4 +2,4 @@
 
 #include "common.h"
 
-char * getStr(int max);
+int getMode(char * password, size_t size);

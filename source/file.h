@@ -2,8 +2,7 @@
 
 #include "common.h"
 
-u32 getBufChecksum(u8 * buf, u32 size);
-Result openFile(const char * path, Handle * filehandle, bool write);
+Result openFile(Handle * filehandle, const char * path, bool write);
 
 inline Result readFile(Handle filehandle, u32 * bytesRead, u64 offset, void * buffer, u32 size)
 {
@@ -15,5 +14,5 @@ inline Result writeFile(Handle filehandle, u32 * bytesWritten, u64 offset, void 
 }
 inline Result closeFile(Handle filehandle)
 {
-	return svcCloseHandle(filehandle);
+	return FSFILE_Close(filehandle);
 }

@@ -1,6 +1,6 @@
 #ifndef FILEBROWSER_H_
 #define FILEBROWSER_H_
 
-char * filebrowser(void);
+char * filebrowser(char * startDir);
 
 #endif
