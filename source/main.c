@@ -10,10 +10,11 @@
 PrintConsole debugConsole, uiConsole;
 
 #define handleCancel() hidScanInput(),((hidKeysDown() | hidKeysHeld()) & KEY_B)
+#define TIMEOUT_MAX 10
 
 Result sendFile(void)
 {
-	printf("Sending a file...\n");
+	printf("Sending a file, press B to abort...\n");
 	printf("Select the file you want to send.\n");
 	
 	consoleSelect(&uiConsole);
@@ -59,35 +60,45 @@ Result sendFile(void)
 	filePacket packet = {0};
 	
 	u32 requestedBlock = 0;
+	u32 previousBlock = 0;
 	
-	printf("Starting transfer, press B to abort...\n");
+	printf("Starting transfer...\n");
+	printf("\x1b[s");
 	while (true) {
 		if(handleCancel()) goto cancel;
 		
 		//receive the id of the block to send
+		u32 timeout = 0;
 		do {
+			printf("\x1b[u\n");
 			receivedSize = 0;
 			receiveData(&requestedBlock, sizeof(requestedBlock), &receivedSize);
 			if(handleCancel()) goto cancel;
-		} while(receivedSize == 0);
+			timeout++;
+		} while(receivedSize == 0 && timeout != TIMEOUT_MAX);
 		
-		//if the received data is "OK" followed by a nullbyte, the receiver is done and we can stop
-		if(receivedSize == 3 && !strncmp((char*)&requestedBlock, "OK", 3)) break;
-		else if(receivedSize == 3 && !strncmp((char*)&requestedBlock, "NO", 3)) goto cancel;
+		//if the received data is a 2 letter message followed by a nullbyte, either cancelled or finished
+		if(receivedSize == 3) break;
 		
 		packet.packetID = requestedBlock;
 		readFile(filehandle, &packet.size, PACKET_DATA_SIZE * packet.packetID, packet.data, PACKET_DATA_SIZE);
 		packet.checksum = getBufChecksum(packet.data, packet.size);
 		
-		sendData(&packet, sizeof(packet));
-				
-		progressBar(blockCount, requestedBlock);
+		sendPacket(packet);
+		
+		if(previousBlock != requestedBlock)
+		{
+			progressBar(blockCount, requestedBlock);
+			previousBlock = requestedBlock;
+		}
 	}
+	cancel:
+	progressBar(blockCount, previousBlock);
+	printf("\n\n");
 	
-	if (receivedSize == 3 && !strncmp((char*)&requestedBlock, "OK", 3))
+	if (!strncmp((char*)&requestedBlock, "OK", 3))
 		printf("Done sending!");
 	else {
-		cancel:
 		printf("Transfer aborted.\n");
 		sendString("NO");
 	}
@@ -99,7 +110,7 @@ Result sendFile(void)
 
 Result receiveFile(void)
 {
-	printf("Receiving a file...\n");
+	printf("Receiving a file, press B to abort.\n");
 	printf("Select where you want to save the file.\n");
 	
 	consoleSelect(&uiConsole);
@@ -142,6 +153,7 @@ Result receiveFile(void)
 		return ret;
 	}
 	
+	printf("Waiting for the number of blocks...\n");
 	u32 blockCount = 0;
 	do {
 		receivedSize = 0;
@@ -152,21 +164,24 @@ Result receiveFile(void)
 		
 	u32 bytesWritten = 0;
 	u32 i = 0;
-		
-	printf("Starting transfer, press B to abort...\n");
+	
+	printf("Starting transfer...\n");
+	printf("\x1b[s");
 	for (i = 0; i < blockCount; i++) {
-		request:
 		if(handleCancel()) goto cancel;
 		
 		//send the id of the block to receive
 		sendData(&i, sizeof(u32));
 		
 		//wait until you receive the packet
+		u32 timeout = 0;
 		do {
+			printf("\x1b[u\n");
 			receivedSize = 0;
 			receiveData(&packet, sizeof(packet), &receivedSize);
 			if(handleCancel()) goto cancel;
-		} while(receivedSize == 0);
+			timeout++;
+		} while(receivedSize == 0 && timeout != TIMEOUT_MAX);
 		
 		//stop if the sender aborted
 		if (receivedSize == 3 && strncmp((char*)&packet, "NO", 3) == 0) goto cancel;
@@ -175,7 +190,8 @@ Result receiveFile(void)
 		//if it is, check if the data received got damaged during the transfer
 		//if needed, request it again
 		if (packet.packetID != i || getBufChecksum(packet.data, packet.size) != packet.checksum) {
-			goto request;
+			i--;
+			continue;
 		}
 		
 		//if all is good, write to the file, update the progress bar, and ask for the next block
@@ -184,12 +200,15 @@ Result receiveFile(void)
 		progressBar(blockCount, i);
 	}
 	
+	cancel:
+	progressBar(blockCount, i);
+	printf("\n\n");
+	
 	if(i == blockCount) {
 		printf("File completely received!\n");
 		sendString("OK");
 	}
 	else {
-		cancel:
 		printf("Transfer aborted.\n");
 		sendString("NO");
 	}

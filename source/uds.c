@@ -144,7 +144,7 @@ Result receiveData(void * data, size_t bufSize, size_t * receivedSize)
 	u16 src_NetworkNodeID;
 	Result ret = udsPullPacket(&bindctx, data, bufSize, receivedSize, &src_NetworkNodeID);
 	if(R_FAILED(ret)) {
-		printf("Error in:\nudsPullPacket\nResult: 0x%.8lx\n", ret);
+		printf("Error in udsPullPacket: 0x%.8lx\n", ret);
 		return ret;
 	}
 	
@@ -155,19 +155,19 @@ Result sendData(void * data, size_t size)
 {
 	Result ret = udsSendTo(UDS_BROADCAST_NETWORKNODEID, data_channel, UDS_SENDFLAG_Default, (u8 *)data, size);
 	if(R_FAILED(ret)) {
-		printf("Error in:\nudsPullPacket\nResult: 0x%.8lx\n", ret);
+		printf("Error in udsSendTo: 0x%.8lx\n", ret);
 		return ret;
 	}
 	
 	return ret;
 }
 
-Result sendPacket(filePacket * packet)
+Result sendPacket(filePacket packet)
 {
-	return sendData((void*)packet, sizeof(filePacket));
+	return sendData(&packet, sizeof(filePacket));
 }
 
 Result sendString(const char * string)
 {
-	return sendData((void*)string, strlen(string));
+	return sendData((void*)string, strlen(string)+1);
 }
