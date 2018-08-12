@@ -1,0 +1,9 @@
+--atlas -f rgba8888 -z auto
+folder.png
+file.png
+download.png
+arrow.png
+go_back.png
+new_room.png
+refresh.png
+room.png

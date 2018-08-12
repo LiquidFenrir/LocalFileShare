@@ -1,7 +1,4 @@
-build/*
-*.elf
-*.cia
-*.bnr
-*.3dsx
-*.smdh
-*.icn
+build/
+out/
+romfs/gfx/
+*.bat
